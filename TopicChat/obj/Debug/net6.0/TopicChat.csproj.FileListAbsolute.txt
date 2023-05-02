@@ -1,0 +1,15 @@
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\bin\Debug\net6.0\TopicChat.exe
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\bin\Debug\net6.0\TopicChat.deps.json
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\bin\Debug\net6.0\TopicChat.runtimeconfig.json
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\bin\Debug\net6.0\TopicChat.dll
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\bin\Debug\net6.0\TopicChat.pdb
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\TopicChat.csproj.AssemblyReference.cache
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\TopicChat.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\TopicChat.AssemblyInfoInputs.cache
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\TopicChat.AssemblyInfo.cs
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\TopicChat.csproj.CoreCompileInputs.cache
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\TopicChat.dll
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\refint\TopicChat.dll
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\TopicChat.pdb
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\TopicChat.genruntimeconfig.cache
+C:\Users\thoang5_mantu\Documents\Sources Code\TopicChat\TopicChat\obj\Debug\net6.0\ref\TopicChat.dll
