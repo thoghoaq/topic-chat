@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System.Collections;
+using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -7,16 +9,17 @@ namespace MultiServer
 {
     class Program
     {
-        private static readonly Socket serverSocket = new (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        private static readonly List<Socket> clientSockets = new ();
+        private static readonly Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private static readonly List<Socket> clientSockets = new();
         private const int BUFFER_SIZE = 2048;
         private const int PORT = 100;
         private static readonly byte[] buffer = new byte[BUFFER_SIZE];
-        private static readonly List<string> listTopics = new ()
+        private static readonly List<string> listTopics = new()
         {
             "A","B","C","D","E","F"
         };
-        private static readonly Dictionary<Socket, List<string>> clientTopics = new ();
+        private static readonly Dictionary<Socket, List<string>> clientTopics = new();
+        private static readonly Queue<int> receivedQueue = new();
 
         static void Main()
         {
@@ -73,7 +76,7 @@ namespace MultiServer
 
         private static void SendListTopicToClient(Socket socket)
         {
-            byte[] data = Encoding.ASCII.GetBytes("Select a topic (using /sub <topic>): " + string.Join(", ", listTopics) + "\nUsing /list to list subcribed topic");
+            byte[] data = Encoding.ASCII.GetBytes("Select a topic (using /sub <topic>): " + string.Join(", ", listTopics) + "\nUse /list to list subcribed topic");
             socket.Send(data);
             Console.WriteLine($"Sended list topic to client {clientSockets.IndexOf(socket)}");
         }
@@ -96,8 +99,12 @@ namespace MultiServer
                 return;
             }
 
-            byte[] recBuf = new byte[received];
-            Array.Copy(buffer, recBuf, received);
+            receivedQueue.Enqueue(received); // Add received into queue
+            int peakReceiveid = receivedQueue.Peek(); // Get first element of queue
+            receivedQueue.Dequeue(); // Remove after get
+
+            byte[] recBuf = new byte[peakReceiveid];
+            Array.Copy(buffer, recBuf, peakReceiveid);
             string text = Encoding.ASCII.GetString(recBuf);
             Console.WriteLine($"Received Text from client {clientSockets.IndexOf(current)}: " + text);
 
@@ -129,7 +136,7 @@ namespace MultiServer
                     else
                     {
                         AddIfNotExists(clientTopics.SingleOrDefault(e => e.Key.Equals(current)).Value, topic);
-                        current.Send(Encoding.ASCII.GetBytes("Subcribed topic " + topic + "\nUsing /send \"<topic>\" \"<message>\""));
+                        current.Send(Encoding.ASCII.GetBytes("Subcribed topic " + topic + "\nUse /send \"<topic>\" \"<message>\""));
                     }
                 }
                 else if (text.StartsWith("/send "))
@@ -140,17 +147,25 @@ namespace MultiServer
 
                     if (match.Success)
                     {
-                        string arg1 = match.Groups[1].Value;
-                        string arg2 = match.Groups[2].Value;
+                        string arg1 = match.Groups[1].Value; // Topic
+                        string arg2 = match.Groups[2].Value; // Message
 
-                        Console.WriteLine("Topic recevied:" + arg1); // Output: "A"
-                        Console.WriteLine("Message recevied:" + arg2); // Output: "message"
-
-                        // Send message to all client subcribe topic A
-                        var listClient = FindListSockets(arg1);
-                        foreach (Socket client in listClient)
+                        // Check client have subcribed topic
+                        if (!clientTopics.SingleOrDefault(e => e.Key.Equals(current)).Value.Contains(arg1))
                         {
-                            client.Send(Encoding.ASCII.GetBytes($"Message from topic {arg1}: {arg2}"));
+                            current.Send(Encoding.ASCII.GetBytes($"Use must subcribe topic {arg1} first"));
+                        }
+                        else
+                        {
+                            Console.WriteLine("Topic recevied: " + arg1); // Output: "A"
+                            Console.WriteLine("Message recevied: " + arg2); // Output: "message"
+
+                            // Send message to all client subcribe topic
+                            var listClient = FindListSockets(arg1);
+                            foreach (Socket client in listClient)
+                            {
+                                client.Send(Encoding.ASCII.GetBytes($"Message from topic {arg1}: {arg2}"));
+                            }
                         }
                     }
                     else
@@ -158,7 +173,8 @@ namespace MultiServer
                         Console.WriteLine($"Client {clientSockets.IndexOf(current)}: Input string doesn't match pattern.");
                         current.Send(Encoding.ASCII.GetBytes("Input string doesn't match pattern."));
                     }
-                } else if (text.Equals("/list"))
+                }
+                else if (text.Equals("/list"))
                 {
                     var subcribedTopic = clientTopics.SingleOrDefault(e => e.Key.Equals(current)).Value;
                     current.Send(Encoding.ASCII.GetBytes("Subcribed topics: " + string.Join(", ", subcribedTopic)));
