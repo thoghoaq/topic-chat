@@ -1,0 +1,15 @@
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\bin\Debug\net6.0\Client.exe
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\bin\Debug\net6.0\Client.deps.json
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\bin\Debug\net6.0\Client.runtimeconfig.json
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\bin\Debug\net6.0\Client.dll
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\bin\Debug\net6.0\Client.pdb
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\Client.csproj.AssemblyReference.cache
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\Client.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\Client.AssemblyInfoInputs.cache
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\Client.AssemblyInfo.cs
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\Client.csproj.CoreCompileInputs.cache
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\Client.dll
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\refint\Client.dll
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\Client.pdb
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\Client.genruntimeconfig.cache
+C:\Users\vle4_mantu\source\repos\ChatSystem\Client\obj\Debug\net6.0\ref\Client.dll

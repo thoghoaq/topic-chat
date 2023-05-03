@@ -1,229 +1,148 @@
-﻿using System.Collections;
-using System.Collections.Concurrent;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.RegularExpressions;
 
-namespace MultiServer
+namespace Server
 {
     class Program
     {
-        private static readonly Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        private static readonly List<Socket> clientSockets = new();
-        private const int BUFFER_SIZE = 2048;
-        private const int PORT = 100;
-        private static readonly byte[] buffer = new byte[BUFFER_SIZE];
-        private static readonly List<string> listTopics = new()
+        // TopicList will have a key value as its identifier 
+        // and a list of sockets acting as each client which subsribe to recieve messages
+        private static Dictionary<string, List<Socket>> TopicList = new()
         {
-            "A","B","C","D","E","F"
+            ["Science"] = new List<Socket>(),
+            ["Math"] = new List<Socket>(),
+            ["English"] = new List<Socket>(),
+            ["Geography"] = new List<Socket>(),
         };
-        private static readonly Dictionary<Socket, List<string>> clientTopics = new();
-        private static readonly Queue<int> receivedQueue = new();
 
-        static void Main()
+        static void Main(string[] args)
         {
-            Console.Title = "Server";
-            SetupServer();
-            Console.ReadLine(); // When we press enter close everything
-            CloseAllSockets();
+            int port = 15000;
+            string ipAddress = "127.0.0.1";
+
+            // We use tcp here to avoid losing data
+            // Create a socket to start listening 
+            Socket ServerListener = new Socket(AddressFamily
+                .InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
+            ServerListener.Bind(endPoint);
+            ServerListener.Listen(100);
+
+            // Begin working with clients
+            Console.WriteLine("Server started...");
+            Console.WriteLine("List of participants: ");
+            while (true)
+            {
+                // Create a socket for each client
+                Socket clientSocket = ServerListener.Accept();
+                Console.WriteLine("Client " + clientSocket.RemoteEndPoint + " is connected");
+
+                // Send a list of topics to client
+                string topic_List = ("List of Topics: @ - " + string.Join(" @ - ", TopicList.Keys)).Replace("@", Environment.NewLine);
+                byte[] tmp = Encoding.ASCII.GetBytes(topic_List);
+                clientSocket.Send(tmp);
+
+                // Handle client's query here
+                Thread userThread = new Thread(new ThreadStart(() => HandleClient(clientSocket)));
+                userThread.Start();
+            }
         }
 
-        private static void SetupServer()
+        private static void HandleClient(Socket client)
         {
-            Console.WriteLine("Setting up server...");
-            serverSocket.Bind(new IPEndPoint(IPAddress.Any, PORT));
-            serverSocket.Listen(1);
-            serverSocket.BeginAccept(AcceptCallback, null);
-            Console.WriteLine("Server setup complete");
-        }
-
-        /// <summary>
-        /// Close all connected client (we do not need to shutdown the server socket as its connections
-        /// are already closed with the clients).
-        /// </summary>
-        private static void CloseAllSockets()
-        {
-            foreach (Socket socket in clientSockets)
+            while (true)
             {
-                socket.Shutdown(SocketShutdown.Both);
-                socket.Close();
-            }
+                // Limit the size of the message to 1024 bytes before converting it to a string
+                byte[] msg = new byte[1024];
 
-            serverSocket.Close();
-        }
-
-        private static void AcceptCallback(IAsyncResult AR)
-        {
-            Socket socket;
-
-            try
-            {
-                socket = serverSocket.EndAccept(AR);
-            }
-            catch (ObjectDisposedException) // I cannot seem to avoid this (on exit when properly closing sockets)
-            {
-                return;
-            }
-
-            clientSockets.Add(socket);
-            clientTopics.Add(socket, new List<string>()); //Initial list topic of a client
-            socket.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, socket);
-            Console.WriteLine($"Client {clientSockets.IndexOf(socket)} connected, waiting for request...");
-            serverSocket.BeginAccept(AcceptCallback, null);
-            SendListTopicToClient(socket);
-        }
-
-        private static void SendListTopicToClient(Socket socket)
-        {
-            byte[] data = Encoding.ASCII.GetBytes("Select a topic (using /sub <topic>): " + string.Join(", ", listTopics) + "\nUse /list to list subcribed topic");
-            socket.Send(data);
-            Console.WriteLine($"Sended list topic to client {clientSockets.IndexOf(socket)}");
-        }
-
-        private static void ReceiveCallback(IAsyncResult AR)
-        {
-            Socket current = (Socket)AR.AsyncState;
-            int received;
-
-            try
-            {
-                received = current.EndReceive(AR);
-            }
-            catch (SocketException)
-            {
-                Console.WriteLine($"Client {clientSockets.IndexOf(current)} forcefully disconnected");
-                // Don't shutdown because the socket may be disposed and its disconnected anyway.
-                current.Close();
-                clientSockets.Remove(current);
-                return;
-            }
-
-            receivedQueue.Enqueue(received); // Add received into queue
-            int peakReceiveid = receivedQueue.Peek(); // Get first element of queue
-            receivedQueue.Dequeue(); // Remove after get
-
-            byte[] recBuf = new byte[peakReceiveid];
-            Array.Copy(buffer, recBuf, peakReceiveid);
-            string text = Encoding.ASCII.GetString(recBuf);
-            Console.WriteLine($"Received Text from client {clientSockets.IndexOf(current)}: " + text);
-
-            if (text.ToLower() == "get time") // Client requested time
-            {
-                Console.WriteLine("Text is a get time request");
-                byte[] data = Encoding.ASCII.GetBytes(DateTime.Now.ToLongTimeString());
-                current.Send(data);
-                Console.WriteLine("Time sent to client");
-            }
-            else if (text.ToLower() == "exit") // Client wants to exit gracefully
-            {
-                // Always Shutdown before closing
-                current.Shutdown(SocketShutdown.Both);
-                current.Close();
-                clientSockets.Remove(current);
-                Console.WriteLine("Client disconnected");
-                return;
-            }
-            else if (text.StartsWith("/"))
-            {
-                if (text.StartsWith("/sub ")) // Client subcribe topic
+                // Prevent server from bugging out in case a client is forcefully closed
+                // Remove client if they disconnect first
+                int size = 0;
+                try
                 {
-                    var topic = listTopics.FirstOrDefault(e => e.Equals(text.Substring(5).Trim()));
-                    if (topic == null) // Not found topic
-                    {
-                        current.Send(Encoding.ASCII.GetBytes("Not found topic"));
-                    }
-                    else
-                    {
-                        AddIfNotExists(clientTopics.SingleOrDefault(e => e.Key.Equals(current)).Value, topic);
-                        current.Send(Encoding.ASCII.GetBytes("Subcribed topic " + topic + "\nUse /send \"<topic>\" \"<message>\""));
-                    }
+                    size = client.Receive(msg);
                 }
-                else if (text.StartsWith("/unsub ")) {
-                    var topic = listTopics.FirstOrDefault(e => e.Equals(text.Substring(7).Trim()));
-                    if (topic == null) // Not found topic
-                    {
-                        current.Send(Encoding.ASCII.GetBytes("Not found topic"));
-                    }
-                    else
-                    {
-                        RemoveIfExists(clientTopics.SingleOrDefault(e => e.Key.Equals(current)).Value, topic);
-                        current.Send(Encoding.ASCII.GetBytes("Unsubcribed topic " + topic));
-                    }
-                }
-                else if (text.StartsWith("/send "))
+                catch (SocketException)
                 {
-                    string pattern = @"""([^""]+)""\s+""([^""]+)"""; // Matches two quoted strings
+                    closeClient(client);
+                    return;
+                }
+                string[] receiveMessage = Encoding.ASCII.GetString(msg, 0, size).Split(' ');
 
-                    Match match = Regex.Match(text, pattern);
+                // Turn the message into an array of string with the length of 2
+                string tmp = string.Join(" ", receiveMessage, 1, receiveMessage.Length - 1);
+                string[] topic_message = { receiveMessage[0], tmp };
+                //foreach (var x in topic_message) Console.WriteLine(x + "1");
 
-                    if (match.Success)
+                // Begin operation
+                // Check if the user want to subscribe
+                if (topic_message[0].ToLower() == "exit")
+                {
+                    closeClient(client);
+                    return;
+                }
+                else if (topic_message[0].ToLower() == "sub")
+                {
+                    string returnMessage = string.Empty;
+                    if (TopicList.ContainsKey(topic_message[1]))
                     {
-                        string arg1 = match.Groups[1].Value; // Topic
-                        string arg2 = match.Groups[2].Value; // Message
-
-                        // Check client have subcribed topic
-                        if (!clientTopics.SingleOrDefault(e => e.Key.Equals(current)).Value.Contains(arg1))
-                        {
-                            current.Send(Encoding.ASCII.GetBytes($"Use must subcribe topic {arg1} first"));
-                        }
+                        if (TopicList[topic_message[1]].Contains(client))
+                            returnMessage = "You are already subscribed to this topic.";
                         else
                         {
-                            Console.WriteLine("Topic recevied: " + arg1); // Output: "A"
-                            Console.WriteLine("Message recevied: " + arg2); // Output: "message"
-
-                            // Send message to all client subcribe topic
-                            var listClient = FindListSockets(arg1);
-                            foreach (Socket client in listClient)
-                            {
-                                client.Send(Encoding.ASCII.GetBytes($"Message from topic {arg1}: {arg2}"));
-                            }
+                            TopicList[topic_message[1]].Add(client);
+                            returnMessage = "You are now subscribed to " + topic_message[1] + " topic.";
                         }
+                        //Console.WriteLine("YES");
                     }
                     else
                     {
-                        Console.WriteLine($"Client {clientSockets.IndexOf(current)}: Input string doesn't match pattern.");
-                        current.Send(Encoding.ASCII.GetBytes("Input string doesn't match pattern."));
+                        returnMessage = "The entered topic doesn't exist.";
+                        //Console.WriteLine("NO");
                     }
+                    byte[] returnMessageByte = Encoding.ASCII.GetBytes(returnMessage);
+                    client.Send(returnMessageByte);
                 }
-                else if (text.Equals("/list"))
+                // Check the input string is a message to a topic
+                else if (TopicList.ContainsKey(topic_message[0]))
                 {
-                    var subcribedTopic = clientTopics.SingleOrDefault(e => e.Key.Equals(current)).Value;
-                    current.Send(Encoding.ASCII.GetBytes("Subcribed topics: " + string.Join(", ", subcribedTopic)));
+                    // If the user is not subscribed
+                    if (!TopicList[topic_message[0]].Contains(client))
+                        client.Send(Encoding.ASCII.GetBytes("User is not subscribed to the topic yet!"));
+                    else
+                    {
+                        if (TopicList[topic_message[0]].Count != 0)
+                        {
+                            // Sending the message back to the client
+                            Console.WriteLine("Sending to all subscribers in topic: " + topic_message[0]);
+                            foreach (var x in TopicList[topic_message[0]])
+                            {
+                                byte[] toUser = Encoding.ASCII.GetBytes("From server: " + topic_message[1]);
+                                x.Send(toUser);
+                            }
+                        }
+                        else
+                            Console.WriteLine("This topic doesn't have any subscriber to send to.");
+                    }
                 }
                 else
                 {
-                    current.Send(Encoding.ASCII.GetBytes("Invalid command"));
+                    client.Send(Encoding.ASCII.GetBytes("The input topic doesn't exist / the formatted input is wrong."));
                 }
             }
-            else
-            {
-                byte[] data = Encoding.ASCII.GetBytes("Message from server: " + text);
-                current.Send(data);
-            }
-
-            current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
         }
-        private static void AddIfNotExists<T>(List<T> list, T item)
+        private static void closeClient(Socket client)
         {
-            if (!list.Contains(item))
+            Console.WriteLine("Client " + client.RemoteEndPoint + " has diconnected");
+            client.Shutdown(SocketShutdown.Both);
+            client.Close();
+            for (int i = 0; i < TopicList.Count; i++)
             {
-                list.Add(item);
+                if (TopicList[TopicList.ElementAt(i).Key].Contains(client))
+                    TopicList[TopicList.ElementAt(i).Key].Remove(client);
             }
-        }
-
-        private static void RemoveIfExists<T>(List<T> list, T item)
-        {
-            if (list.Contains(item))
-            {
-                list.Remove(item);
-            }
-        }
-
-        private static List<Socket> FindListSockets(string topic)
-        {
-            List<Socket> list = clientTopics.Where(e => e.Value.Contains(topic)).Select(d => d.Key).ToList();
-            return list;
         }
     }
 }
+

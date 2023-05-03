@@ -1,105 +1,70 @@
-﻿using System.Net.Sockets;
-using System.Net;
+﻿using System.Net;
+using System.Net.Sockets;
 using System.Text;
 
-namespace MultiClient
+namespace Client
 {
     class Program
     {
-        private static readonly Socket ClientSocket = new Socket
-            (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private static readonly Socket ClientSocket = new Socket(AddressFamily
+                .InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private const int port = 15000;
 
-        private const int PORT = 100;
-
-        static void Main()
+        static void Main(string[] args)
         {
-            Console.Title = "Client";
-            ConnectToServer();
-            RequestLoop();
-            Exit();
+            // Check if the server has started or not
+            IsConnected();
+
+            /*string ipAddress = "127.0.0.1";
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(ipAddress), port);
+            ClientSocket.Connect(endPoint);
+            Console.WriteLine("Client " + ClientSocket.RemoteEndPoint + ":is connected.");*/
+
+            // Start querying messages
+            while (true)
+            {
+                // Receive the message from ther server
+                byte[] serverMessage = new byte[1024];
+                int size = ClientSocket.Receive(serverMessage);
+                Console.WriteLine(Encoding.ASCII.GetString(serverMessage, 0, size));
+                Console.WriteLine("-----------------------------------------------------");
+
+                // Let client enter query
+                string clientMessage = string.Empty;
+                Console.WriteLine("Enter your query based on either of the formats below: @ * <sub> <topic> @ * <topic> <message> @ * <exit>"
+                    .Replace("@", Environment.NewLine));
+                clientMessage = Console.ReadLine();
+
+                //Console.Write(clientMessage);
+
+                if (clientMessage != null)
+                {
+                    ClientSocket.Send(Encoding.ASCII.GetBytes(clientMessage), 0, clientMessage.Length, SocketFlags.None);
+                    if (clientMessage == "exit")
+                    {
+                        ClientSocket.Shutdown(SocketShutdown.Both);
+                        ClientSocket.Close();
+                        return;
+                    }
+                }
+                else
+                    Console.WriteLine("You didn't write anything.");
+            }
         }
 
-        private static void ConnectToServer()
+        private static void IsConnected()
         {
-            int attempts = 0;
-
             while (!ClientSocket.Connected)
             {
                 try
                 {
-                    attempts++;
-                    Console.WriteLine("Connection attempt " + attempts);
-                    // Change IPAddress.Loopback to a remote IP to connect to a remote host.
-                    ClientSocket.Connect(IPAddress.Loopback, PORT);
+                    Console.WriteLine("Waiting for connection.");
+                    ClientSocket.Connect(IPAddress.Loopback, port);
                 }
                 catch (SocketException)
                 {
                     Console.Clear();
                 }
-            }
-
-            Console.Clear();
-            Console.WriteLine("Connected");
-        }
-
-        private static void RequestLoop()
-        {
-            Console.WriteLine(@"<Type ""exit"" to properly disconnect client>");
-            // Create a new thread to receive incoming messages
-            var receiveThread = new Thread(ReceiveResponse);
-            // Start the receive thread
-            receiveThread.Start();
-
-            while (true)
-            {
-                SendRequest();
-            }
-
-        }
-
-        /// <summary>
-        /// Close socket and exit program.
-        /// </summary>
-        private static void Exit()
-        {
-            SendString("exit"); // Tell the server we are exiting
-            ClientSocket.Shutdown(SocketShutdown.Both);
-            ClientSocket.Close();
-            Environment.Exit(0);
-        }
-
-        private static void SendRequest()
-        {
-            //Console.WriteLine("Send a request: ");
-            string request = Console.ReadLine();
-            SendString(request);
-
-            if (request.ToLower() == "exit")
-            {
-                Exit();
-            }
-        }
-
-        /// <summary>
-        /// Sends a string to the server with ASCII encoding.
-        /// </summary>
-        private static void SendString(string text)
-        {
-            byte[] buffer = Encoding.ASCII.GetBytes(text);
-            ClientSocket.Send(buffer, 0, buffer.Length, SocketFlags.None);
-        }
-
-        private static void ReceiveResponse()
-        {
-            while (true)
-            {
-                var buffer = new byte[2048];
-                int received = ClientSocket.Receive(buffer, SocketFlags.None);
-                if (received == 0) return;
-                var data = new byte[received];
-                Array.Copy(buffer, data, received);
-                string text = Encoding.ASCII.GetString(data);
-                Console.WriteLine(text);
             }
         }
     }
