@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\TopicChat\\Client.csproj": {}
+    "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\Client\\Client.csproj": {}
   },
   "projects": {
-    "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\TopicChat\\Client.csproj": {
+    "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\Client\\Client.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\TopicChat\\Client.csproj",
+        "projectUniqueName": "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\Client\\Client.csproj",
         "projectName": "Client",
-        "projectPath": "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\TopicChat\\Client.csproj",
+        "projectPath": "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\Client\\Client.csproj",
         "packagesPath": "C:\\Users\\thoang5_mantu\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\TopicChat\\obj\\",
+        "outputPath": "C:\\Users\\thoang5_mantu\\Documents\\Sources Code\\TopicChat\\Client\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\thoang5_mantu\\AppData\\Roaming\\NuGet\\NuGet.Config",
