@@ -1,8 +1,6 @@
-﻿using System;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 using System.Net;
 using System.Text;
-using System.Threading;
 
 namespace MultiClient
 {
@@ -49,7 +47,6 @@ namespace MultiClient
             Console.WriteLine(@"<Type ""exit"" to properly disconnect client>");
             // Create a new thread to receive incoming messages
             var receiveThread = new Thread(ReceiveResponse);
-
             // Start the receive thread
             receiveThread.Start();
 
@@ -57,6 +54,7 @@ namespace MultiClient
             {
                 SendRequest();
             }
+
         }
 
         /// <summary>
@@ -72,7 +70,7 @@ namespace MultiClient
 
         private static void SendRequest()
         {
-            Console.Write("Send a request: ");
+            //Console.WriteLine("Send a request: ");
             string request = Console.ReadLine();
             SendString(request);
 
