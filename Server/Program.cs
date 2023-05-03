@@ -139,6 +139,18 @@ namespace MultiServer
                         current.Send(Encoding.ASCII.GetBytes("Subcribed topic " + topic + "\nUse /send \"<topic>\" \"<message>\""));
                     }
                 }
+                else if (text.StartsWith("/unsub ")) {
+                    var topic = listTopics.FirstOrDefault(e => e.Equals(text.Substring(7).Trim()));
+                    if (topic == null) // Not found topic
+                    {
+                        current.Send(Encoding.ASCII.GetBytes("Not found topic"));
+                    }
+                    else
+                    {
+                        RemoveIfExists(clientTopics.SingleOrDefault(e => e.Key.Equals(current)).Value, topic);
+                        current.Send(Encoding.ASCII.GetBytes("Unsubcribed topic " + topic));
+                    }
+                }
                 else if (text.StartsWith("/send "))
                 {
                     string pattern = @"""([^""]+)""\s+""([^""]+)"""; // Matches two quoted strings
@@ -197,6 +209,14 @@ namespace MultiServer
             if (!list.Contains(item))
             {
                 list.Add(item);
+            }
+        }
+
+        private static void RemoveIfExists<T>(List<T> list, T item)
+        {
+            if (list.Contains(item))
+            {
+                list.Remove(item);
             }
         }
 
