@@ -1,25 +1,22 @@
-﻿using System.Collections;
-using System.Collections.Concurrent;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace MultiServer
 {
-    class Program
+    public class Program
     {
-        private static readonly Socket serverSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        private static readonly List<Socket> clientSockets = new();
-        private const int BUFFER_SIZE = 2048;
-        private const int PORT = 100;
-        private static readonly byte[] buffer = new byte[BUFFER_SIZE];
-        private static readonly List<string> listTopics = new()
+        public static readonly Socket serverSocket = new (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        public static readonly List<Socket> clientSockets = new ();
+        public const int BUFFER_SIZE = 2048;
+        public const int PORT = 100;
+        public static readonly byte[] buffer = new byte[BUFFER_SIZE];
+        public static readonly List<string> listTopics = new ()
         {
             "A","B","C","D","E","F"
         };
-        private static readonly Dictionary<Socket, List<string>> clientTopics = new();
-        private static readonly Queue<int> receivedQueue = new();
+        public static readonly Dictionary<Socket, List<string>> clientTopics = new ();
 
         static void Main()
         {
@@ -29,7 +26,7 @@ namespace MultiServer
             CloseAllSockets();
         }
 
-        private static void SetupServer()
+        public static void SetupServer()
         {
             Console.WriteLine("Setting up server...");
             serverSocket.Bind(new IPEndPoint(IPAddress.Any, PORT));
@@ -42,7 +39,7 @@ namespace MultiServer
         /// Close all connected client (we do not need to shutdown the server socket as its connections
         /// are already closed with the clients).
         /// </summary>
-        private static void CloseAllSockets()
+        public static void CloseAllSockets()
         {
             foreach (Socket socket in clientSockets)
             {
@@ -53,7 +50,7 @@ namespace MultiServer
             serverSocket.Close();
         }
 
-        private static void AcceptCallback(IAsyncResult AR)
+        public static void AcceptCallback(IAsyncResult AR)
         {
             Socket socket;
 
@@ -74,14 +71,14 @@ namespace MultiServer
             SendListTopicToClient(socket);
         }
 
-        private static void SendListTopicToClient(Socket socket)
+        public static void SendListTopicToClient(Socket socket)
         {
-            byte[] data = Encoding.ASCII.GetBytes("Select a topic (using /sub <topic>): " + string.Join(", ", listTopics) + "\nUse /list to list subcribed topic");
+            byte[] data = Encoding.ASCII.GetBytes("Select a topic (using /sub <topic>): " + string.Join(", ", listTopics) + "\nUsing /list to list subcribed topic");
             socket.Send(data);
             Console.WriteLine($"Sended list topic to client {clientSockets.IndexOf(socket)}");
         }
 
-        private static void ReceiveCallback(IAsyncResult AR)
+        public static void ReceiveCallback(IAsyncResult AR)
         {
             Socket current = (Socket)AR.AsyncState;
             int received;
@@ -99,12 +96,8 @@ namespace MultiServer
                 return;
             }
 
-            receivedQueue.Enqueue(received); // Add received into queue
-            int peakReceiveid = receivedQueue.Peek(); // Get first element of queue
-            receivedQueue.Dequeue(); // Remove after get
-
-            byte[] recBuf = new byte[peakReceiveid];
-            Array.Copy(buffer, recBuf, peakReceiveid);
+            byte[] recBuf = new byte[received];
+            Array.Copy(buffer, recBuf, received);
             string text = Encoding.ASCII.GetString(recBuf);
             Console.WriteLine($"Received Text from client {clientSockets.IndexOf(current)}: " + text);
 
@@ -185,8 +178,7 @@ namespace MultiServer
                         Console.WriteLine($"Client {clientSockets.IndexOf(current)}: Input string doesn't match pattern.");
                         current.Send(Encoding.ASCII.GetBytes("Input string doesn't match pattern."));
                     }
-                }
-                else if (text.Equals("/list"))
+                } else if (text.Equals("/list"))
                 {
                     var subcribedTopic = clientTopics.SingleOrDefault(e => e.Key.Equals(current)).Value;
                     current.Send(Encoding.ASCII.GetBytes("Subcribed topics: " + string.Join(", ", subcribedTopic)));
@@ -204,7 +196,7 @@ namespace MultiServer
 
             current.BeginReceive(buffer, 0, BUFFER_SIZE, SocketFlags.None, ReceiveCallback, current);
         }
-        private static void AddIfNotExists<T>(List<T> list, T item)
+        public static void AddIfNotExists<T>(List<T> list, T item)
         {
             if (!list.Contains(item))
             {
@@ -212,7 +204,7 @@ namespace MultiServer
             }
         }
 
-        private static void RemoveIfExists<T>(List<T> list, T item)
+        public static void RemoveIfExists<T>(List<T> list, T item)
         {
             if (list.Contains(item))
             {
@@ -220,7 +212,7 @@ namespace MultiServer
             }
         }
 
-        private static List<Socket> FindListSockets(string topic)
+        public static List<Socket> FindListSockets(string topic)
         {
             List<Socket> list = clientTopics.Where(e => e.Value.Contains(topic)).Select(d => d.Key).ToList();
             return list;

@@ -4,12 +4,12 @@ using System.Text;
 
 namespace MultiClient
 {
-    class Program
+    public class Program
     {
-        private static readonly Socket ClientSocket = new Socket
+        public static Socket ClientSocket = new Socket
             (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-        private const int PORT = 100;
+        public const int PORT = 100;
 
         static void Main()
         {
@@ -19,7 +19,7 @@ namespace MultiClient
             Exit();
         }
 
-        private static void ConnectToServer()
+        public static void ConnectToServer()
         {
             int attempts = 0;
 
@@ -34,15 +34,15 @@ namespace MultiClient
                 }
                 catch (SocketException)
                 {
-                    Console.Clear();
+                    //Console.Clear();
                 }
             }
 
-            Console.Clear();
+            //Console.Clear();
             Console.WriteLine("Connected");
         }
 
-        private static void RequestLoop()
+        public static void RequestLoop()
         {
             Console.WriteLine(@"<Type ""exit"" to properly disconnect client>");
             // Create a new thread to receive incoming messages
@@ -60,7 +60,7 @@ namespace MultiClient
         /// <summary>
         /// Close socket and exit program.
         /// </summary>
-        private static void Exit()
+        public static void Exit()
         {
             SendString("exit"); // Tell the server we are exiting
             ClientSocket.Shutdown(SocketShutdown.Both);
@@ -68,7 +68,7 @@ namespace MultiClient
             Environment.Exit(0);
         }
 
-        private static void SendRequest()
+        public static void SendRequest()
         {
             //Console.WriteLine("Send a request: ");
             string request = Console.ReadLine();
@@ -83,13 +83,13 @@ namespace MultiClient
         /// <summary>
         /// Sends a string to the server with ASCII encoding.
         /// </summary>
-        private static void SendString(string text)
+        public static void SendString(string text)
         {
             byte[] buffer = Encoding.ASCII.GetBytes(text);
             ClientSocket.Send(buffer, 0, buffer.Length, SocketFlags.None);
         }
 
-        private static void ReceiveResponse()
+        public static void ReceiveResponse()
         {
             while (true)
             {
